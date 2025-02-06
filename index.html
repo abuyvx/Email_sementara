@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Sementara</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            color: white;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+        }
+        h1 { margin-bottom: 10px; }
+        #email-box {
+            font-size: 18px;
+            font-weight: bold;
+            padding: 10px;
+            background: white;
+            color: black;
+            display: inline-block;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;
+            background: #ff9800;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+            color: black;
+            border-radius: 5px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #0072ff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Email Sementara</h1>
+        <p>Gunakan email ini untuk menerima pesan sementara.</p>
+        <div id="email-box">Menghasilkan email...</div>
+        <button onclick="generateEmail()">Buat Email Baru</button>
+        <button onclick="getEmails()">Perbarui Inbox</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>Dari</th>
+                    <th>Subjek</th>
+                    <th>Pesan</th>
+                </tr>
+            </thead>
+            <tbody id="email-list"></tbody>
+        </table>
+    </div>
+
+    <script>
+        let email;
+        let emailCreatedTime;
+        const emailLifespan = 5 * 60 * 1000; // 5 menit
+
+        function generateEmail() {
+            let domains = ["1secmail.com", "1secmail.org", "1secmail.net"];
+            let name = Math.random().toString(36).substring(2, 10);
+            email = `${name}@${domains[Math.floor(Math.random() * domains.length)]}`;
+            document.getElementById("email-box").innerText = email;
+            emailCreatedTime = Date.now();
+            checkEmailExpiration();
+        }
+
+        function checkEmailExpiration() {
+            setInterval(() => {
+                if (Date.now() - emailCreatedTime >= emailLifespan) {
+                    generateEmail();
+                }
+            }, 10000);
+        }
+
+        async function getEmails() {
+            let [name, domain] = email.split("@");
+            let response = await fetch(`https://www.1secmail.com/api/v1/?action=getMessages&login=${name}&domain=${domain}`);
+            let messages = await response.json();
+            let emailList = document.getElementById("email-list");
+            emailList.innerHTML = "";
+            messages.forEach(async (msg) => {
+                let messageResponse = await fetch(`https://www.1secmail.com/api/v1/?action=readMessage&login=${name}&domain=${domain}&id=${msg.id}`);
+                let message = await messageResponse.json();
+                emailList.innerHTML += `<tr>
+                    <td>${msg.from}</td>
+                    <td>${msg.subject}</td>
+                    <td>${message.body}</td>
+                </tr>`;
+            });
+        }
+
+        generateEmail();
+    </script>
+</body>
+</html>
